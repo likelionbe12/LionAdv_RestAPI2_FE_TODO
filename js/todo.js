@@ -21,7 +21,7 @@ async function fetchTodos() {
         const response = await axios.get(`${API_BASE_URL}/api/todos/`);
         const todoList = document.getElementById('todoList');
         todoList.innerHTML = response.data.map(todo => `
-            <div class="flex items-center justify-between bg-blue-50 p-4 rounded-lg shadow-sm">
+            <div class="flex items-center justify-between bg-blue-50 p-4 rounded-lg shadow-sm" onclick="showTodoDetail(${todo.id})">
                         <div class="flex items-center space-x-4">
                             <input type="checkbox"
                                    class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-400"
@@ -77,3 +77,60 @@ document.getElementById("createTodoForm").addEventListener('submit', async (e) =
 
 // 페이지 로드 시 Todo 목록 조회
 document.addEventListener('DOMContentLoaded', fetchTodos); 
+
+let currentTodoId=null;
+
+// Todo 항목 클릭 이벤트 처리
+async function showTodoDetail(id) {
+    try {
+        currentTodoId=id;
+        const response = await axios.get(`${API_BASE_URL}/api/todos/${id}/`);
+        const todo = response.data;
+
+        document.getElementById('modalTitle').textContent = todo.title;
+        document.getElementById('modalContent').textContent = todo.content || '내용 없음';
+
+        document.getElementById('todoModal').classList.remove('hidden');
+    } catch (error) {
+        console.error('Error:', error);
+        alert('상세 정보 조회 실패: ' + error.message);
+    }
+}
+
+// 모달 닫기
+function closeTodoModal() {
+    document.getElementById('todoModal').classList.add('hidden');
+}
+
+// Todo 삭제
+async function deleteTodo(id) {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+
+    try {
+        await axios.delete(`${API_BASE_URL}/api/todos/${id}/`);
+        closeTodoModal();
+        fetchTodos();
+    } catch (error) {
+        console.error('Error:', error);
+        alert('삭제 실패: ' + error.message);
+    }
+}
+
+// Todo 수정
+async function editTodo() {
+    const newTitle = prompt('새 제목을 입력하세요:', document.getElementById('modalTitle').textContent);
+    if (!newTitle) return;
+
+    try {
+        await axios.put(`${API_BASE_URL}/api/todos/${currentTodoId}/`, {
+            title: newTitle,
+            content: document.getElementById('modalContent').textContent
+        });
+
+        closeTodoModal();
+        fetchTodos();
+    } catch (error) {
+        console.error('Error:', error);
+        alert('수정 실패: ' + error.message);
+    }
+}
